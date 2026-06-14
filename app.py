@@ -169,7 +169,59 @@ with tab1:
         "Tồn Kho (Mới)", "Tồn ST (Mới)", "Tồn Kho (Cận)", "Tồn ST (Cận)",
         "GT Kho (Mới) (Tr VNĐ)", "GT ST (Mới) (Tr VNĐ)", "GT Kho (Cận) (Tr VNĐ)", "GT ST (Cận) (Tr VNĐ)"
     ]
-    st.dataframe(tbl_nganh.style.format(formatter="{:,.0f}", subset=num_cols_fmt, na_rep="-"), use_container_width=True)
+    
+    th_props = [('background-color', '#00b050'), ('color', 'white'), ('font-weight', 'bold'), ('text-align', 'center')]
+    styles = [{'selector': 'th', 'props': th_props}]
+    
+    st.dataframe(tbl_nganh.style.format(formatter="{:,.0f}", subset=num_cols_fmt, na_rep="-").set_table_styles(styles), use_container_width=True)
+
+    # ------------------------------------------
+    # BẢNG THỐNG KÊ PIVOT THEO TRẠNG THÁI KD
+    # ------------------------------------------
+    st.markdown("---")
+    st.subheader("Bảng Phân tích SKU theo Trạng thái kinh doanh")
+    
+    # 1. Tính tổng sl_ban theo tháng đang chọn cho mỗi mã SP
+    sales_by_sp = f_monthly.groupby('ma_sp')['sl_ban'].sum().reset_index()
+    
+    # 2. Merge vào df_master (đã lọc theo ngành)
+    df_piv = pd.merge(f_master, sales_by_sp, on='ma_sp', how='left')
+    df_piv['sl_ban'] = df_piv['sl_ban'].fillna(0)
+    
+    # 3. Loại bỏ #N/A, 0
+    na_vals = ['#N/A', 'N/A', 'N/a', '0', 0, '#N/a', '#n/a']
+    df_piv = df_piv[~df_piv['trang_thai_kd'].isin(na_vals)]
+    
+    # 4. Áp dụng Rule
+    mask_cond = (df_piv['tong_ton_kho'] > 0) | (df_piv['tong_ton_st'] > 0) | (df_piv['sl_ban'] > 0)
+    mask_exempt = df_piv['trang_thai_kd'].str.lower().isin(['đa dạng', 'kd bình thường', 'kinh doanh bình thường'])
+    
+    df_piv = df_piv[mask_cond | mask_exempt]
+    
+    # 5. Pivot Table
+    pivot_df = pd.pivot_table(
+        df_piv, 
+        index='nganh_hang', 
+        columns='trang_thai_kd', 
+        values='ma_model', 
+        aggfunc=pd.Series.nunique, 
+        fill_value=0,
+        margins=True,
+        margins_name='Grand Total'
+    )
+    
+    # 6. Sắp xếp giảm dần theo Total
+    if 'Grand Total' in pivot_df.columns and 'Grand Total' in pivot_df.index:
+        grand_total_row = pivot_df.loc[['Grand Total']]
+        pivot_df = pivot_df.drop('Grand Total').sort_values(by='Grand Total', ascending=False)
+        
+        col_totals = grand_total_row.drop(columns=['Grand Total']).squeeze()
+        sorted_cols = col_totals.sort_values(ascending=False).index.tolist()
+        
+        pivot_df = pivot_df[sorted_cols + ['Grand Total']]
+        pivot_df = pd.concat([pivot_df, grand_total_row[sorted_cols + ['Grand Total']]])
+        
+    st.dataframe(pivot_df.style.set_table_styles(styles), use_container_width=True)
 
 # ==========================================
 # TAB 2: TRA CỨU SẢN PHẨM & KHO
@@ -192,20 +244,47 @@ with tab2:
     if s_sp: res_inv = res_inv[res_inv['ten_sp'].isin(s_sp)]
     if s_kho: res_inv = res_inv[res_inv['kho'].isin(s_kho)]
     
-    st.subheader("3.a Thống kê Tồn Kho theo Kho/Siêu thị")
+    st.subheader("Thống kê Tồn Kho theo Kho/Siêu thị")
     disp_inv_cols = ['ten_sp', 'kho', 'suc_ban', 'ton_kho_tong', 'ton_kho_kho_moi', 'ton_kho_kho_can', 'ton_kho_st_moi', 'ton_kho_st_can', 'gt_tong', 'gt_kho_moi', 'gt_kho_can', 'gt_st_moi', 'gt_st_can', 'co_ton', 'st_co_dm']
-    st.dataframe(res_inv[disp_inv_cols], use_container_width=True)
+    inv_rename = {
+        'ten_sp': 'Tên sản phẩm', 'kho': 'Kho/Siêu thị', 'suc_ban': 'Sức bán', 
+        'ton_kho_tong': 'Tổng tồn kho', 'ton_kho_kho_moi': 'Tồn kho mới', 'ton_kho_kho_can': 'Tồn kho cận', 
+        'ton_kho_st_moi': 'Tồn siêu thị mới', 'ton_kho_st_can': 'Tồn siêu thị cận', 
+        'gt_tong': 'Tổng giá trị', 'gt_kho_moi': 'Giá trị kho mới', 'gt_kho_can': 'Giá trị kho cận', 
+        'gt_st_moi': 'Giá trị ST mới', 'gt_st_can': 'Giá trị ST cận', 'co_ton': 'Có tồn', 'st_co_dm': 'Siêu thị có danh mục'
+    }
+    df_inv_disp = res_inv[disp_inv_cols].rename(columns=inv_rename)
     
-    st.subheader("3.b Chi tiết Thông tin Sản phẩm (Master)")
+    th_props = [('background-color', '#00b050'), ('color', 'white'), ('font-weight', 'bold'), ('text-align', 'center')]
+    styles = [{'selector': 'th', 'props': th_props}]
+    st.dataframe(df_inv_disp.style.set_table_styles(styles), use_container_width=True)
+    
+    st.subheader("Chi tiết Thông tin Sản phẩm (Master)")
     res_master = df_master.copy()
     if s_nganh: res_master = res_master[res_master['nganh_hang'].isin(s_nganh)]
     if s_sp: res_master = res_master[res_master['ten_sp'].isin(s_sp)]
     
     disp_master_cols = [
-        "nganh_hang", "nhom_hang", "ma_model", "giam_doc_mua", "buyer", "vat", "trang_thai_kd",
+        "nganh_hang", "nhom_hang", "giam_doc_mua", "buyer", "ma_model", "ma_sp", "ten_sp", "vat", "trang_thai_kd",
         "gia_ban_dvn", "gia_ban_dvl", "gia_bqgq", "front", "ty_le_front", "st_co_ton", "tong_st"
     ]
-    st.dataframe(res_master[disp_master_cols], use_container_width=True)
+    master_rename = {
+        "nganh_hang": "Ngành hàng", "nhom_hang": "Nhóm hàng", "giam_doc_mua": "Giám đốc mua hàng", 
+        "buyer": "Buyer mua hàng", "ma_model": "Mã Model", "ma_sp": "Mã sản phẩm", "ten_sp": "Tên sản phẩm", 
+        "vat": "Phần trăm VAT", "trang_thai_kd": "Trạng thái kinh doanh", "gia_ban_dvn": "Giá bán DVN", 
+        "gia_ban_dvl": "Giá bán DVL", "gia_bqgq": "Giá BQGQ", "front": "Front", "ty_le_front": "Tỉ lệ Front", 
+        "st_co_ton": "Siêu thị có tồn", "tong_st": "Tổng siêu thị"
+    }
+    df_master_disp = res_master[disp_master_cols].rename(columns=master_rename)
+    
+    df_master_disp["Phần trăm VAT"] = pd.to_numeric(df_master_disp["Phần trăm VAT"], errors='coerce').fillna(0) * 100
+    df_master_disp["Tỉ lệ Front"] = pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100
+    
+    format_dict = {
+        "Phần trăm VAT": "{:,.3f}%",
+        "Tỉ lệ Front": "{:,.3f}%"
+    }
+    st.dataframe(df_master_disp.style.format(format_dict, na_rep="-").set_table_styles(styles), use_container_width=True)
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: gray;'>Hệ thống Báo cáo Nội bộ - Phát triển bằng Python Streamlit</p>", unsafe_allow_html=True)
