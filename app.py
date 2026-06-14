@@ -107,9 +107,9 @@ with tab1:
             }
             bg, bottom_bg = color_map.get(color, ("#6c757d", "#5a6268"))
             return f"""
-            <div style="background-color: {bg}; padding: 15px; border-radius: 5px 5px 0 0; color: white; position: relative; min-height: 100px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: white;">{value}</h2>
-                <p style="margin: 5px 0 0 0; font-size: 13px; color: white;">{title}</p>
+            <div style="background-color: {bg}; padding: 15px; border-radius: 5px 5px 0 0; color: white; position: relative; height: 110px; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{value}</h2>
+                <p style="margin: 5px 0 0 0; font-size: 13px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{title}</p>
                 <i class="{icon_class}" style="position: absolute; right: 15px; top: 15px; font-size: 40px; opacity: 0.15; color: white;"></i>
             </div>
             <div style="background-color: {bottom_bg}; padding: 5px; border-radius: 0 0 5px 5px; text-align: center; color: rgba(255,255,255,0.9); font-size: 12px; margin-bottom: 15px; cursor: pointer;">
@@ -125,22 +125,23 @@ with tab1:
         v4 = f"{f_monthly['sl_nhap'].sum():,.0f}"
         
         tong_ton_sl = f_master['tong_ton_st'].sum() + f_master['tong_ton_kho'].sum()
-        tong_sb = f_monthly['sl_ban'].sum()
+        tong_sb = f_inv['suc_ban'].sum()
         sntk_sl = tong_ton_sl / tong_sb if tong_sb > 0 else 0
         
+        f_inv_price = pd.merge(f_inv, f_master[['ma_sp', 'gia_bqgq']], on='ma_sp', how='left')
+        tong_sb_gv = (f_inv_price['suc_ban'] * f_inv_price['gia_bqgq']).sum()
         tong_gt_ton = f_master['tong_gia_tri_ton'].sum()
-        tong_dt_gv = f_monthly['dt_ban_gv'].sum()
-        sntk_gt = tong_gt_ton / tong_dt_gv if tong_dt_gv > 0 else 0
+        sntk_gt = tong_gt_ton / tong_sb_gv if tong_sb_gv > 0 else 0
         
         v5 = f"{sntk_sl:,.2f}"
         v6 = f"{sntk_gt:,.2f}"
 
         c1.markdown(make_card("DT Bán (Tr)", v1, "green", "fas fa-money-bill-wave"), unsafe_allow_html=True)
         c2.markdown(make_card("DS Nhập (Tr)", v2, "orange", "fas fa-download"), unsafe_allow_html=True)
-        c3.markdown(make_card("Tổng SL Bán", v3, "blue", "fas fa-shopping-cart"), unsafe_allow_html=True)
-        c4.markdown(make_card("Tổng SL Nhập", v4, "red", "fas fa-box"), unsafe_allow_html=True)
-        c5.markdown(make_card("SNTK Số lượng", v5, "purple", "fas fa-calculator"), unsafe_allow_html=True)
-        c6.markdown(make_card("SNTK Giá trị", v6, "teal", "fas fa-chart-line"), unsafe_allow_html=True)
+        c3.markdown(make_card("SNTK Số lượng", v5, "purple", "fas fa-calculator"), unsafe_allow_html=True)
+        c4.markdown(make_card("SNTK Giá trị", v6, "teal", "fas fa-chart-line"), unsafe_allow_html=True)
+        c5.markdown(make_card("Tổng SL Bán", v3, "blue", "fas fa-shopping-cart"), unsafe_allow_html=True)
+        c6.markdown(make_card("Tổng SL Nhập", v4, "red", "fas fa-box"), unsafe_allow_html=True)
         
     st.markdown("---")
     st.subheader("Bảng Phân tích Ngành hàng (Tổng Tồn Kho & Doanh Thu)")
@@ -239,8 +240,8 @@ with tab1:
         
     def highlight_grand_total(row):
         if row.name == 'Grand Total':
-            return ['font-weight: bold; background-color: rgba(255,255,255,0.1)'] * len(row)
-        return ['font-weight: bold; background-color: rgba(255,255,255,0.1)' if col == 'Grand Total' else '' for col in row.index]
+            return ['font-weight: bold; background-color: #00b050; color: white'] * len(row)
+        return ['font-weight: bold; background-color: #00b050; color: white' if col == 'Grand Total' else '' for col in row.index]
 
     st.dataframe(pivot_df.style.set_table_styles(styles).apply(highlight_grand_total, axis=1), use_container_width=True)
 
