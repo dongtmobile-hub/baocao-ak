@@ -4,16 +4,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import datetime
 
-st.set_page_config(page_title="Dashboard Báo Cáo AK", page_icon="📊", layout="wide", initial_sidebar_state="expanded")
+# --- Cấu hình trang ---
+st.set_page_config(page_title="Báo Cáo An Khang", page_icon="🌿", layout="wide")
 
-# Custom CSS
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    html, body, [class*="css"]  {
-        font-family: 'Inter', sans-serif;
-    }
-    .stMetric {
         background-color: #262730;
         padding: 20px;
         border-radius: 12px;
@@ -186,10 +181,24 @@ with tab1:
         "GT Kho (Mới) (Tr VNĐ)", "GT ST (Mới) (Tr VNĐ)", "GT Kho (Cận) (Tr VNĐ)", "GT ST (Cận) (Tr VNĐ)"
     ]
     
-    th_props = [('background-color', '#00b050'), ('color', 'white'), ('font-weight', 'bold'), ('text-align', 'center')]
-    styles = [{'selector': 'th', 'props': th_props}]
+    def fmt_num(x):
+        try:
+            val = float(x)
+            if pd.isna(val) or val == 0: return "-"
+            return f"{val:,.0f}"
+        except:
+            return x
+
+    def fmt_pct(x):
+        try:
+            val = float(x)
+            if pd.isna(val) or val == 0: return "-"
+            return f"{val:,.3f}%"
+        except:
+            return x
     
-    st.dataframe(tbl_nganh.style.format(formatter="{:,.0f}", subset=num_cols_fmt, na_rep="-").set_table_styles(styles), use_container_width=True, hide_index=True)
+    html_nganh = tbl_nganh.style.format(formatter=fmt_num, subset=num_cols_fmt).set_table_attributes('class="ak-table"').hide(axis="index").to_html()
+    st.markdown(f'<div style="overflow-x: auto; max-height: 600px;">{html_nganh}</div>', unsafe_allow_html=True)
 
     # ------------------------------------------
     # BẢNG THỐNG KÊ PIVOT THEO TRẠNG THÁI KD
@@ -240,10 +249,11 @@ with tab1:
         
     def highlight_grand_total(row):
         if row.name == 'Grand Total':
-            return ['font-weight: bold; background-color: #00b050; color: white'] * len(row)
-        return ['font-weight: bold; background-color: #00b050; color: white' if col == 'Grand Total' else '' for col in row.index]
+            return ['font-weight: bold; color: #dc3545; background-color: transparent;'] * len(row)
+        return ['font-weight: bold; color: #dc3545; background-color: transparent;' if col == 'Grand Total' else '' for col in row.index]
 
-    st.dataframe(pivot_df.style.set_table_styles(styles).apply(highlight_grand_total, axis=1), use_container_width=True)
+    html_piv = pivot_df.style.format(formatter=fmt_num).apply(highlight_grand_total, axis=1).set_table_attributes('class="ak-table"').to_html()
+    st.markdown(f'<div style="overflow-x: auto; max-height: 600px;">{html_piv}</div>', unsafe_allow_html=True)
 
 # ==========================================
 # TAB 2: TRA CỨU SẢN PHẨM & KHO
@@ -277,13 +287,11 @@ with tab2:
     }
     df_inv_disp = res_inv[disp_inv_cols].rename(columns=inv_rename)
     
-    # Định dạng phân tách số thập phân, nếu 0 thì giữ 0
+    # Định dạng phân tách số thập phân, nếu 0 thì giữ -
     inv_format_cols = ['Sức bán', 'Tổng tồn kho', 'Tồn kho mới', 'Tồn kho cận', 'Tồn siêu thị mới', 'Tồn siêu thị cận', 'Tổng giá trị', 'Giá trị kho mới', 'Giá trị kho cận', 'Giá trị ST mới', 'Giá trị ST cận']
-    format_dict_inv = {c: "{:,.0f}" for c in inv_format_cols}
+    format_dict_inv = {c: fmt_num for c in inv_format_cols}
     
-    th_props = [('background-color', '#00b050'), ('color', 'white'), ('font-weight', 'bold'), ('text-align', 'center')]
-    styles = [{'selector': 'th', 'props': th_props}]
-    st.dataframe(df_inv_disp.style.format(format_dict_inv, na_rep="-").set_table_styles(styles), use_container_width=True, hide_index=True)
+    st.dataframe(df_inv_disp.style.format(format_dict_inv), use_container_width=True, hide_index=True)
     
     st.subheader("Chi tiết Thông tin Sản phẩm (Master)")
     res_master = df_master.copy()
@@ -307,14 +315,14 @@ with tab2:
     df_master_disp["Tỉ lệ Front"] = pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100
     
     format_dict = {
-        "Phần trăm VAT": "{:,.3f}%",
-        "Tỉ lệ Front": "{:,.3f}%",
-        "Giá bán DVN": "{:,.0f}",
-        "Giá bán DVL": "{:,.0f}",
-        "Giá BQGQ": "{:,.0f}",
-        "Tổng siêu thị": "{:,.0f}"
+        "Phần trăm VAT": fmt_pct,
+        "Tỉ lệ Front": fmt_pct,
+        "Giá bán DVN": fmt_num,
+        "Giá bán DVL": fmt_num,
+        "Giá BQGQ": fmt_num,
+        "Tổng siêu thị": fmt_num
     }
-    st.dataframe(df_master_disp.style.format(format_dict, na_rep="-").set_table_styles(styles), use_container_width=True, hide_index=True)
+    st.dataframe(df_master_disp.style.format(format_dict), use_container_width=True, hide_index=True)
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: gray;'>Hệ thống Báo cáo Nội bộ - Phát triển bằng Python Streamlit</p>", unsafe_allow_html=True)
