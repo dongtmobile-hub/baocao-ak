@@ -9,6 +9,27 @@ st.set_page_config(page_title="Báo Cáo An Khang", page_icon="🌿", layout="wi
 
 st.markdown("""
 <style>
+.ak-banner {
+    background-color: #008c44;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    margin-top: -30px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.ak-banner img {
+    height: 50px;
+    margin-right: 20px;
+}
+.ak-banner h1 {
+    color: white !important;
+    margin: 0;
+    font-size: 26px;
+    font-family: sans-serif;
+    font-weight: bold;
+}
 .ak-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-bottom: 20px; }
 .ak-table th { background-color: #008c44 !important; color: white !important; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #ddd; position: sticky; top: 0; z-index: 1; }
 .ak-table td { padding: 8px; border: 1px solid #ddd; text-align: right; }
@@ -16,9 +37,9 @@ st.markdown("""
 .ak-table tr:hover { background-color: rgba(0,140,68,0.1); }
 </style>
 
-<div style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 10px;">
-    <img src="https://cdn.tgdd.vn/mwgcart/ankhang/images/logo.png" width="180" onerror="this.src='https://www.nhathuocankhang.com/images/logo.png'" style="margin-right: 20px;">
-    <h1 style='color: #008c44; font-family: sans-serif; margin: 0;'>BÁO CÁO NGÀNH HÀNG AN KHANG</h1>
+<div class="ak-banner">
+    <img src="https://cdn.tgdd.vn/mwgcart/ankhang/images/logo.png" onerror="this.src='https://www.nhathuocankhang.com/images/logo.png'">
+    <h1>BÁO CÁO KINH DOANH AN KHANG</h1>
 </div>
 """, unsafe_allow_html=True)
 
@@ -50,33 +71,33 @@ tab1, tab2 = st.tabs(["📈 Phân tích Ngành hàng & Thời gian", "🔍 Tra c
 with tab1:
     st.header("Phân tích Ngành hàng & Chỉ số theo Thời gian")
     
-    col1, col2 = st.columns([1, 3])
+    col1, col2 = st.columns([1, 4])
     with col1:
-        st.subheader("Bộ lọc Thời gian & Ngành")
-        available_months = sorted(df_monthly['thang'].unique())
-        
-        # Get current month in format YYYY/TMM
-        now = datetime.datetime.now()
-        current_month_str = f"{now.year}/T{now.month:02d}"
-        
-        if current_month_str in available_months:
-            default_month = current_month_str
-        elif available_months:
-            default_month = available_months[-1]
-        else:
-            default_month = None
+        with st.expander("🛠️ Bộ lọc Thời gian & Ngành", expanded=False):
+            available_months = sorted(df_monthly['thang'].dropna().unique(), reverse=True)
             
-        selected_months = st.multiselect("Chọn Tháng/Năm", options=available_months, default=[default_month] if default_month else [])
-        
-        std_nganh = [
-            "Thuốc", "Trang Thiết Bị Y Tế", "Thực Phẩm Chức Năng", 
-            "Sữa - Thức uống bổ dưỡng các loại", "Mỹ phẩm các loại", 
-            "Hóa phẩm các loại", "Điện gia dụng", "BHX - Hàng khuyến mãi", 
-            "AK - Hàng Khuyến Mãi", "Thức uống giải khát các loại", "Làm Đẹp"
-        ]
-        default_nganh = [n for n in std_nganh if n in df_master['nganh_hang'].unique()]
-        selected_nganh = st.multiselect("Chọn Ngành hàng", options=df_master['nganh_hang'].unique(), default=default_nganh)
-        
+            # Get current month in format YYYY/TMM
+            now = datetime.datetime.now()
+            current_month_str = f"{now.year}/T{now.month:02d}"
+            
+            if current_month_str in available_months:
+                default_month = current_month_str
+            elif available_months:
+                default_month = available_months[0]
+            else:
+                default_month = None
+                
+            selected_months = st.multiselect("Chọn Tháng/Năm", options=available_months, default=[default_month] if default_month else [])
+            
+            std_nganh = [
+                "Thuốc", "Trang Thiết Bị Y Tế", "Thực Phẩm Chức Năng", 
+                "Sữa - Thức uống bổ dưỡng các loại", "Mỹ phẩm các loại", 
+                "Hóa phẩm các loại", "Điện gia dụng", "BHX - Hàng khuyến mãi", 
+                "AK - Hàng Khuyến Mãi", "Thức uống giải khát các loại", "Làm Đẹp"
+            ]
+            default_nganh = [n for n in std_nganh if n in df_master['nganh_hang'].unique()]
+            selected_nganh = st.multiselect("Chọn Ngành hàng", options=df_master['nganh_hang'].dropna().unique(), default=default_nganh)
+            
         f_monthly = df_monthly[(df_monthly['thang'].isin(selected_months)) & (df_monthly['nganh_hang'].isin(selected_nganh))]
         f_inv = df_inv[df_inv['nganh_hang'].isin(selected_nganh)]
         f_master = df_master[df_master['nganh_hang'].isin(selected_nganh)]
@@ -251,16 +272,21 @@ with tab1:
         pivot_df = pivot_df[sorted_cols + ['Grand Total']]
         pivot_df = pd.concat([pivot_df, grand_total_row[sorted_cols + ['Grand Total']]])
         
-    # Gỡ bỏ tên của cột và gán tên cho index để tiết kiệm 1 hàng
+    # Đưa Ngành hàng từ index thành cột để header nằm ngang nhau
+    pivot_df = pivot_df.reset_index()
+    pivot_df.rename(columns={'index': 'Ngành hàng', 'nganh_hang': 'Ngành hàng'}, inplace=True)
     pivot_df.columns.name = None
-    pivot_df.index.name = "Ngành hàng"
         
     def highlight_grand_total(row):
-        if row.name == 'Grand Total':
+        is_total = (row['Ngành hàng'] == 'Grand Total')
+        if is_total:
             return ['font-weight: bold; color: #dc3545; background-color: transparent;'] * len(row)
         return ['font-weight: bold; color: #dc3545; background-color: transparent;' if col == 'Grand Total' else '' for col in row.index]
 
-    html_piv = pivot_df.style.format(formatter=fmt_num).apply(highlight_grand_total, axis=1).set_table_attributes('class="ak-table"').to_html()
+    def align_nganh_hang(val):
+        return 'text-align: left; font-weight: bold;'
+
+    html_piv = pivot_df.style.format(formatter=fmt_num).applymap(align_nganh_hang, subset=['Ngành hàng']).apply(highlight_grand_total, axis=1).set_table_attributes('class="ak-table"').hide(axis="index").to_html()
     st.markdown(f'<div style="overflow-x: auto; max-height: 600px;">{html_piv}</div>', unsafe_allow_html=True)
 
 # ==========================================
