@@ -9,25 +9,21 @@ st.set_page_config(page_title="Báo Cáo An Khang", page_icon="🌿", layout="wi
 
 st.markdown("""
 <style>
-        background-color: #262730;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        border-left: 5px solid #4CAF50;
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 24px !important;
-        font-weight: bold !important;
-        color: #ffffff !important;
-    }
-    [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] p {
-        font-size: 16px !important;
-        font-weight: bold !important;
-        color: #d1d5db !important;
-    }
+.ak-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; margin-bottom: 20px; }
+.ak-table th { background-color: #008c44 !important; color: white !important; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #ddd; position: sticky; top: 0; z-index: 1; }
+.ak-table td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+.ak-table tr:nth-child(even) { background-color: rgba(0,0,0,0.02); }
+.ak-table tr:hover { background-color: rgba(0,140,68,0.1); }
 </style>
+
+<div style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 10px;">
+    <img src="https://cdn.tgdd.vn/mwgcart/ankhang/images/logo.png" width="180" onerror="this.src='https://www.nhathuocankhang.com/images/logo.png'" style="margin-right: 20px;">
+    <h1 style='color: #008c44; font-family: sans-serif; margin: 0;'>BÁO CÁO NGÀNH HÀNG AN KHANG</h1>
+</div>
 """, unsafe_allow_html=True)
 
+# Cache data
+@st.cache_data
 def load_data():
     df_master = pd.read_parquet('master.parquet')
     df_monthly = pd.read_parquet('monthly.parquet')
@@ -45,8 +41,6 @@ try:
 except Exception as e:
     st.error(f"Chưa tìm thấy dữ liệu Parquet. Vui lòng chạy file `etl.py` trước.\nChi tiết lỗi: {e}")
     st.stop()
-
-st.title("📊 BÁO CÁO NGÀNH HÀNG AK 2026")
 
 tab1, tab2 = st.tabs(["📈 Phân tích Ngành hàng & Thời gian", "🔍 Tra cứu Sản phẩm & Kho"])
 
@@ -189,11 +183,21 @@ with tab1:
         except:
             return x
 
-    def fmt_pct(x):
+    def fmt_pct_vat(x):
         try:
             val = float(x)
             if pd.isna(val) or val == 0: return "-"
-            return f"{val:,.3f}%"
+            if val.is_integer():
+                return f"{int(val)}%"
+            return f"{val:g}%"
+        except:
+            return x
+
+    def fmt_pct_front(x):
+        try:
+            val = float(x)
+            if pd.isna(val) or val == 0: return "-"
+            return f"{val:,.2f}%"
         except:
             return x
     
@@ -246,6 +250,10 @@ with tab1:
         
         pivot_df = pivot_df[sorted_cols + ['Grand Total']]
         pivot_df = pd.concat([pivot_df, grand_total_row[sorted_cols + ['Grand Total']]])
+        
+    # Gỡ bỏ tên của cột và gán tên cho index để tiết kiệm 1 hàng
+    pivot_df.columns.name = None
+    pivot_df.index.name = "Ngành hàng"
         
     def highlight_grand_total(row):
         if row.name == 'Grand Total':
@@ -315,8 +323,8 @@ with tab2:
     df_master_disp["Tỉ lệ Front"] = pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100
     
     format_dict = {
-        "Phần trăm VAT": fmt_pct,
-        "Tỉ lệ Front": fmt_pct,
+        "Phần trăm VAT": fmt_pct_vat,
+        "Tỉ lệ Front": fmt_pct_front,
         "Giá bán DVN": fmt_num,
         "Giá bán DVL": fmt_num,
         "Giá BQGQ": fmt_num,
