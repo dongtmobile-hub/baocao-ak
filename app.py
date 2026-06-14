@@ -102,30 +102,45 @@ with tab1:
                 "blue": ("#007bff", "#0062cc"),
                 "orange": ("#fd7e14", "#e85e0b"),
                 "red": ("#dc3545", "#c82333"),
+                "purple": ("#6f42c1", "#59339d"),
+                "teal": ("#20c997", "#1aa179"),
             }
             bg, bottom_bg = color_map.get(color, ("#6c757d", "#5a6268"))
             return f"""
-            <div style="background-color: {bg}; padding: 20px; border-radius: 5px 5px 0 0; color: white; position: relative; min-height: 120px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h2 style="margin: 0; font-size: 32px; font-weight: bold; color: white;">{value}</h2>
-                <p style="margin: 5px 0 0 0; font-size: 15px; color: white;">{title}</p>
-                <i class="{icon_class}" style="position: absolute; right: 20px; top: 25px; font-size: 55px; opacity: 0.15; color: white;"></i>
+            <div style="background-color: {bg}; padding: 15px; border-radius: 5px 5px 0 0; color: white; position: relative; min-height: 100px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: white;">{value}</h2>
+                <p style="margin: 5px 0 0 0; font-size: 13px; color: white;">{title}</p>
+                <i class="{icon_class}" style="position: absolute; right: 15px; top: 15px; font-size: 40px; opacity: 0.15; color: white;"></i>
             </div>
-            <div style="background-color: {bottom_bg}; padding: 5px; border-radius: 0 0 5px 5px; text-align: center; color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px; cursor: pointer;">
+            <div style="background-color: {bottom_bg}; padding: 5px; border-radius: 0 0 5px 5px; text-align: center; color: rgba(255,255,255,0.9); font-size: 12px; margin-bottom: 15px; cursor: pointer;">
                 Chi Tiết <i class="fas fa-arrow-circle-right" style="margin-left: 5px;"></i>
             </div>
             """
 
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
         
         v1 = f"{f_monthly['dt_ban'].sum() / 1e6:,.0f}"
         v2 = f"{f_monthly['ds_nhap'].sum() / 1e6:,.0f}"
         v3 = f"{f_monthly['sl_ban'].sum():,.0f}"
         v4 = f"{f_monthly['sl_nhap'].sum():,.0f}"
+        
+        tong_ton_sl = f_master['tong_ton_st'].sum() + f_master['tong_ton_kho'].sum()
+        tong_sb = f_monthly['sl_ban'].sum()
+        sntk_sl = tong_ton_sl / tong_sb if tong_sb > 0 else 0
+        
+        tong_gt_ton = f_master['tong_gia_tri_ton'].sum()
+        tong_dt_gv = f_monthly['dt_ban_gv'].sum()
+        sntk_gt = tong_gt_ton / tong_dt_gv if tong_dt_gv > 0 else 0
+        
+        v5 = f"{sntk_sl:,.2f}"
+        v6 = f"{sntk_gt:,.2f}"
 
-        c1.markdown(make_card("Doanh thu Bán (Tr VNĐ)", v1, "green", "fas fa-money-bill-wave"), unsafe_allow_html=True)
-        c2.markdown(make_card("Doanh số Nhập (Tr VNĐ)", v2, "orange", "fas fa-download"), unsafe_allow_html=True)
+        c1.markdown(make_card("DT Bán (Tr)", v1, "green", "fas fa-money-bill-wave"), unsafe_allow_html=True)
+        c2.markdown(make_card("DS Nhập (Tr)", v2, "orange", "fas fa-download"), unsafe_allow_html=True)
         c3.markdown(make_card("Tổng SL Bán", v3, "blue", "fas fa-shopping-cart"), unsafe_allow_html=True)
         c4.markdown(make_card("Tổng SL Nhập", v4, "red", "fas fa-box"), unsafe_allow_html=True)
+        c5.markdown(make_card("SNTK Số lượng", v5, "purple", "fas fa-calculator"), unsafe_allow_html=True)
+        c6.markdown(make_card("SNTK Giá trị", v6, "teal", "fas fa-chart-line"), unsafe_allow_html=True)
         
     st.markdown("---")
     st.subheader("Bảng Phân tích Ngành hàng (Tổng Tồn Kho & Doanh Thu)")
@@ -160,8 +175,8 @@ with tab1:
     # Đổi tên cột thêm hậu tố (Triệu VNĐ)
     tbl_nganh.rename(columns={c: f"{c} (Tr VNĐ)" for c in gt_cols}, inplace=True)
     
-    # Sắp xếp theo DT Bán giảm dần
-    tbl_nganh = tbl_nganh.sort_values(by="DT Bán (Tr VNĐ)", ascending=False)
+    # Sắp xếp theo DT Bán giảm dần và reset index
+    tbl_nganh = tbl_nganh.sort_values(by="DT Bán (Tr VNĐ)", ascending=False).reset_index(drop=True)
     
     num_cols_fmt = [
         "SL Bán", "DT Bán (Tr VNĐ)", "DT Giá vốn (Tr VNĐ)", 
@@ -173,7 +188,7 @@ with tab1:
     th_props = [('background-color', '#00b050'), ('color', 'white'), ('font-weight', 'bold'), ('text-align', 'center')]
     styles = [{'selector': 'th', 'props': th_props}]
     
-    st.dataframe(tbl_nganh.style.format(formatter="{:,.0f}", subset=num_cols_fmt, na_rep="-").set_table_styles(styles), use_container_width=True)
+    st.dataframe(tbl_nganh.style.format(formatter="{:,.0f}", subset=num_cols_fmt, na_rep="-").set_table_styles(styles), use_container_width=True, hide_index=True)
 
     # ------------------------------------------
     # BẢNG THỐNG KÊ PIVOT THEO TRẠNG THÁI KD
@@ -188,9 +203,10 @@ with tab1:
     df_piv = pd.merge(f_master, sales_by_sp, on='ma_sp', how='left')
     df_piv['sl_ban'] = df_piv['sl_ban'].fillna(0)
     
-    # 3. Loại bỏ #N/A, 0
-    na_vals = ['#N/A', 'N/A', 'N/a', '0', 0, '#N/a', '#n/a']
+    # 3. Loại bỏ #N/A, 0, Không kinh doanh, nan
+    na_vals = ['#N/A', 'N/A', 'N/a', '0', 0, '#N/a', '#n/a', 'không kinh doanh', 'Không kinh doanh', 'Không KD', 'nan', 'NaN']
     df_piv = df_piv[~df_piv['trang_thai_kd'].isin(na_vals)]
+    df_piv = df_piv.dropna(subset=['trang_thai_kd'])
     
     # 4. Áp dụng Rule
     mask_cond = (df_piv['tong_ton_kho'] > 0) | (df_piv['tong_ton_st'] > 0) | (df_piv['sl_ban'] > 0)
@@ -221,7 +237,12 @@ with tab1:
         pivot_df = pivot_df[sorted_cols + ['Grand Total']]
         pivot_df = pd.concat([pivot_df, grand_total_row[sorted_cols + ['Grand Total']]])
         
-    st.dataframe(pivot_df.style.set_table_styles(styles), use_container_width=True)
+    def highlight_grand_total(row):
+        if row.name == 'Grand Total':
+            return ['font-weight: bold; background-color: rgba(255,255,255,0.1)'] * len(row)
+        return ['font-weight: bold; background-color: rgba(255,255,255,0.1)' if col == 'Grand Total' else '' for col in row.index]
+
+    st.dataframe(pivot_df.style.set_table_styles(styles).apply(highlight_grand_total, axis=1), use_container_width=True)
 
 # ==========================================
 # TAB 2: TRA CỨU SẢN PHẨM & KHO
@@ -255,9 +276,13 @@ with tab2:
     }
     df_inv_disp = res_inv[disp_inv_cols].rename(columns=inv_rename)
     
+    # Định dạng phân tách số thập phân, nếu 0 thì giữ 0
+    inv_format_cols = ['Sức bán', 'Tổng tồn kho', 'Tồn kho mới', 'Tồn kho cận', 'Tồn siêu thị mới', 'Tồn siêu thị cận', 'Tổng giá trị', 'Giá trị kho mới', 'Giá trị kho cận', 'Giá trị ST mới', 'Giá trị ST cận']
+    format_dict_inv = {c: "{:,.0f}" for c in inv_format_cols}
+    
     th_props = [('background-color', '#00b050'), ('color', 'white'), ('font-weight', 'bold'), ('text-align', 'center')]
     styles = [{'selector': 'th', 'props': th_props}]
-    st.dataframe(df_inv_disp.style.set_table_styles(styles), use_container_width=True)
+    st.dataframe(df_inv_disp.style.format(format_dict_inv, na_rep="-").set_table_styles(styles), use_container_width=True, hide_index=True)
     
     st.subheader("Chi tiết Thông tin Sản phẩm (Master)")
     res_master = df_master.copy()
@@ -282,9 +307,13 @@ with tab2:
     
     format_dict = {
         "Phần trăm VAT": "{:,.3f}%",
-        "Tỉ lệ Front": "{:,.3f}%"
+        "Tỉ lệ Front": "{:,.3f}%",
+        "Giá bán DVN": "{:,.0f}",
+        "Giá bán DVL": "{:,.0f}",
+        "Giá BQGQ": "{:,.0f}",
+        "Tổng siêu thị": "{:,.0f}"
     }
-    st.dataframe(df_master_disp.style.format(format_dict, na_rep="-").set_table_styles(styles), use_container_width=True)
+    st.dataframe(df_master_disp.style.format(format_dict, na_rep="-").set_table_styles(styles), use_container_width=True, hide_index=True)
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: gray;'>Hệ thống Báo cáo Nội bộ - Phát triển bằng Python Streamlit</p>", unsafe_allow_html=True)
