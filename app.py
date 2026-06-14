@@ -286,7 +286,7 @@ with tab1:
     def align_nganh_hang(val):
         return 'text-align: left; font-weight: bold;'
 
-    html_piv = pivot_df.style.format(formatter=fmt_num).applymap(align_nganh_hang, subset=['Ngành hàng']).apply(highlight_grand_total, axis=1).set_table_attributes('class="ak-table"').hide(axis="index").to_html()
+    html_piv = pivot_df.style.format(formatter=fmt_num).map(align_nganh_hang, subset=['Ngành hàng']).apply(highlight_grand_total, axis=1).set_table_attributes('class="ak-table"').hide(axis="index").to_html()
     st.markdown(f'<div style="overflow-x: auto; max-height: 600px;">{html_piv}</div>', unsafe_allow_html=True)
 
 # ==========================================
