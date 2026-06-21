@@ -44,7 +44,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Cache data
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_data():
     df_master = pd.read_parquet('master.parquet')
     df_monthly = pd.read_parquet('monthly.parquet')
