@@ -148,11 +148,16 @@ with tab1:
         v4 = f"{f_monthly['sl_nhap'].sum():,.0f}"
         
         tong_ton_sl = f_master['tong_ton_st'].sum() + f_master['tong_ton_kho'].sum()
-        tong_sb = f_inv['suc_ban'].sum()
+        tong_sb = f_master['tong_sb'].sum() if 'tong_sb' in f_master.columns else 0
         sntk_sl = tong_ton_sl / tong_sb if tong_sb > 0 else 0
         
-        f_inv_price = pd.merge(f_inv, f_master[['ma_sp', 'gia_bqgq']], on='ma_sp', how='left')
-        tong_sb_gv = (f_inv_price['suc_ban'] * f_inv_price['gia_bqgq']).sum()
+        # SNTK Giá trị = Tổng Giá trị Tồn / Tổng sức bán Giá vốn
+        # Tính Sức bán giá vốn = tổng (Sức bán * Giá BQGQ) từ master
+        if 'tong_sb' in f_master.columns and 'gia_bqgq' in f_master.columns:
+            tong_sb_gv = (f_master['tong_sb'] * f_master['gia_bqgq']).sum()
+        else:
+            tong_sb_gv = 0
+            
         tong_gt_ton = f_master['tong_gia_tri_ton'].sum()
         sntk_gt = tong_gt_ton / tong_sb_gv if tong_sb_gv > 0 else 0
         
