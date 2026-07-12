@@ -53,6 +53,16 @@ try:
         df_monthly = pd.read_parquet(f_monthly)
         df_inv = pd.read_parquet(f_inv)
         
+        # Ép kiểu Category để tiết kiệm RAM
+        for col in ['ma_sp', 'thang', 'nganh_hang', 'nhom_hang']:
+            if col in df_monthly.columns: df_monthly[col] = df_monthly[col].astype('category')
+            
+        for col in ['ma_sp', 'ten_sp', 'kho', 'nganh_hang', 'nhom_hang']:
+            if col in df_inv.columns: df_inv[col] = df_inv[col].astype('category')
+            
+        for col in ['ma_sp', 'ten_sp', 'nganh_hang', 'nhom_hang', 'giam_doc_mua', 'buyer', 'ma_model', 'trang_thai_kd']:
+            if col in df_master.columns: df_master[col] = df_master[col].astype('category')
+        
         # Merge master with monthly
         df_m = pd.merge(df_monthly, df_master[['ma_sp', 'nganh_hang', 'nhom_hang']], on='ma_sp', how='left')
         # Merge master with inv
