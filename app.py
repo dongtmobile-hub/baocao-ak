@@ -346,11 +346,12 @@ with tab2:
     }
     df_inv_disp = res_inv[disp_inv_cols].rename(columns=inv_rename)
     
-    # Định dạng phân tách số thập phân, nếu 0 thì giữ -
+    # Định dạng phân tách số thập phân trực tiếp vào DataFrame để tiết kiệm RAM (tránh dùng Styler cho data lớn)
     inv_format_cols = ['Sức bán', 'Tổng tồn kho', 'Tồn kho mới', 'Tồn kho cận', 'Tồn siêu thị mới', 'Tồn siêu thị cận', 'Tổng giá trị', 'Giá trị kho mới', 'Giá trị kho cận', 'Giá trị ST mới', 'Giá trị ST cận']
-    format_dict_inv = {c: fmt_num for c in inv_format_cols}
+    for c in inv_format_cols:
+        df_inv_disp[c] = df_inv_disp[c].apply(fmt_num)
     
-    st.dataframe(df_inv_disp.style.format(format_dict_inv), use_container_width=True, hide_index=True)
+    st.dataframe(df_inv_disp, use_container_width=True, hide_index=True)
     
     st.subheader("Chi tiết Thông tin Sản phẩm (Master)")
     res_master = df_master.copy()
@@ -370,18 +371,15 @@ with tab2:
     }
     df_master_disp = res_master[disp_master_cols].rename(columns=master_rename)
     
-    df_master_disp["Phần trăm VAT"] = pd.to_numeric(df_master_disp["Phần trăm VAT"], errors='coerce').fillna(0) * 100
-    df_master_disp["Tỉ lệ Front"] = pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100
+    df_master_disp["Phần trăm VAT"] = (pd.to_numeric(df_master_disp["Phần trăm VAT"], errors='coerce').fillna(0) * 100).apply(fmt_pct_vat)
+    df_master_disp["Tỉ lệ Front"] = (pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100).apply(fmt_pct_front)
     
-    format_dict = {
-        "Phần trăm VAT": fmt_pct_vat,
-        "Tỉ lệ Front": fmt_pct_front,
-        "Giá bán DVN": fmt_num,
-        "Giá bán DVL": fmt_num,
-        "Giá BQGQ": fmt_num,
-        "Tổng siêu thị": fmt_num
-    }
-    st.dataframe(df_master_disp.style.format(format_dict), use_container_width=True, hide_index=True)
+    df_master_disp["Giá bán DVN"] = df_master_disp["Giá bán DVN"].apply(fmt_num)
+    df_master_disp["Giá bán DVL"] = df_master_disp["Giá bán DVL"].apply(fmt_num)
+    df_master_disp["Giá BQGQ"] = df_master_disp["Giá BQGQ"].apply(fmt_num)
+    df_master_disp["Tổng siêu thị"] = df_master_disp["Tổng siêu thị"].apply(fmt_num)
+    
+    st.dataframe(df_master_disp, use_container_width=True, hide_index=True)
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: gray;'>Hệ thống Báo cáo Nội bộ - Phát triển bằng Python Streamlit</p>", unsafe_allow_html=True)
