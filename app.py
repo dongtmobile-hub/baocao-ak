@@ -73,10 +73,10 @@ try:
     
     # --- Sidebar: Upload Dữ Liệu ---
     st.sidebar.header("📥 Cập nhật dữ liệu thủ công")
-    st.sidebar.markdown("Nếu không tự động đồng bộ được, bạn có thể tự upload 3 file **.parquet** tại đây:")
-    uploaded_master = st.sidebar.file_uploader("1. Upload master.parquet", type=["parquet"], key="up_master")
-    uploaded_monthly = st.sidebar.file_uploader("2. Upload monthly.parquet", type=["parquet"], key="up_monthly")
-    uploaded_inv = st.sidebar.file_uploader("3. Upload inventory.parquet", type=["parquet"], key="up_inv")
+    st.sidebar.markdown("Nếu không tự động đồng bộ được, bạn có thể tự upload 3 file **.csv** tại đây:")
+    uploaded_master = st.sidebar.file_uploader("1. Upload master.csv", type=["csv"], key="up_master")
+    uploaded_monthly = st.sidebar.file_uploader("2. Upload monthly.csv", type=["csv"], key="up_monthly")
+    uploaded_inv = st.sidebar.file_uploader("3. Upload inventory.csv", type=["csv"], key="up_inv")
     
     try:
         if uploaded_master and uploaded_monthly and uploaded_inv:
@@ -85,9 +85,9 @@ try:
             st.sidebar.success("✅ Đã tải dữ liệu từ file upload thành công!")
         else:
             # Mặc định đọc từ file local
-            df_master, df_monthly, df_inv = load_data('master.parquet', 'monthly.parquet', 'inventory.parquet')
+            df_master, df_monthly, df_inv = load_data('master.csv', 'monthly.csv', 'inventory.csv')
     except Exception as e:
-        st.error(f"⚠️ Chưa tìm thấy dữ liệu Parquet hoặc file bị lỗi.\n\n**Cách khắc phục:**\n1. Chạy file `sync_github.py` trên máy tính để tự động tạo và đồng bộ file.\n2. Hoặc upload thủ công 3 file `.parquet` ở menu bên trái.\n\nChi tiết lỗi: {e}")
+        st.error(f"⚠️ Chưa tìm thấy dữ liệu CSV hoặc file bị lỗi.\n\n**Cách khắc phục:**\n1. Chạy file `sync_github.py` trên máy tính để tự động tạo và đồng bộ file.\n2. Hoặc upload thủ công 3 file `.csv` ở menu bên trái.\n\nChi tiết lỗi: {e}")
         st.stop()
     
     tab1, tab2 = st.tabs(["📈 Phân tích Ngành hàng & Thời gian", "🔍 Tra cứu Sản phẩm & Kho"])
