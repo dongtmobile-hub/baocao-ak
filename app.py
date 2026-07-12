@@ -46,12 +46,13 @@ try:
     </div>
     """, unsafe_allow_html=True)
     
-    # Cache data bằng data để tránh clone memory
+    # Chuyển sang dùng CSV để né lỗi Crash ngầm của thư viện PyArrow trên Streamlit Cloud
     @st.cache_data(ttl=300)
-    def load_data(f_master='master.parquet', f_monthly='monthly.parquet', f_inv='inventory.parquet'):
-        df_master = pd.read_parquet(f_master)
-        df_monthly = pd.read_parquet(f_monthly)
-        df_inv = pd.read_parquet(f_inv)
+    def load_data(f_master='master.csv', f_monthly='monthly.csv', f_inv='inventory.csv'):
+        # Dùng engine 'c' của Pandas rất ổn định, không dùng pyarrow
+        df_master = pd.read_csv(f_master, low_memory=False)
+        df_monthly = pd.read_csv(f_monthly, low_memory=False)
+        df_inv = pd.read_csv(f_inv, low_memory=False)
         
         # Ép kiểu Category để tiết kiệm RAM
         for col in ['ma_sp', 'thang', 'nganh_hang', 'nhom_hang']:
@@ -362,10 +363,13 @@ try:
         # Dùng Streamlit column_config để format số ở frontend, tiết kiệm 90% RAM cho server
         inv_format_cols = ['Sức bán', 'Tổng tồn kho', 'Tồn kho mới', 'Tồn kho cận', 'Tồn siêu thị mới', 'Tồn siêu thị cận', 'Tổng giá trị', 'Giá trị kho mới', 'Giá trị kho cận', 'Giá trị ST mới', 'Giá trị ST cận']
         
-        # Tạo cấu hình cột để thêm dấu phẩy phân cách hàng nghìn
         col_cfg = {c: st.column_config.NumberColumn(format="%,.0f") for c in inv_format_cols}
         
-        # Hiển thị dataframe với cấu hình cột
+        # Giới hạn 500 dòng để chống văng trình duyệt (browser crash) khi load bảng quá lớn
+        if len(df_inv_disp) > 500:
+            st.info(f"💡 Đang hiển thị 500 dòng đầu tiên (trên tổng số {len(df_inv_disp):,.0f} dòng). Vui lòng chọn bộ lọc Sản phẩm/Kho để xem chi tiết chính xác.")
+            df_inv_disp = df_inv_disp.head(500)
+            
         st.dataframe(df_inv_disp, use_container_width=True, hide_index=True, column_config=col_cfg)
         
         st.subheader("Chi tiết Thông tin Sản phẩm (Master)")
@@ -403,6 +407,11 @@ try:
             "Tổng siêu thị": st.column_config.NumberColumn(format="%,.0f")
         }
         
+        # Giới hạn 500 dòng để chống văng trình duyệt (browser crash) khi load bảng quá lớn
+        if len(df_master_disp) > 500:
+            st.info(f"💡 Đang hiển thị 500 dòng đầu tiên (trên tổng số {len(df_master_disp):,.0f} dòng). Vui lòng chọn bộ lọc Sản phẩm/Ngành hàng để xem chi tiết chính xác.")
+            df_master_disp = df_master_disp.head(500)
+            
         st.dataframe(df_master_disp, use_container_width=True, hide_index=True, column_config=master_cfg)
     
     st.markdown("---")
