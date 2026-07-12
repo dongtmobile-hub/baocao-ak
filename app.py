@@ -352,7 +352,7 @@ try:
         # Định dạng phân tách số thập phân trực tiếp vào DataFrame để tiết kiệm RAM (tránh dùng Styler cho data lớn)
         inv_format_cols = ['Sức bán', 'Tổng tồn kho', 'Tồn kho mới', 'Tồn kho cận', 'Tồn siêu thị mới', 'Tồn siêu thị cận', 'Tổng giá trị', 'Giá trị kho mới', 'Giá trị kho cận', 'Giá trị ST mới', 'Giá trị ST cận']
         for c in inv_format_cols:
-            df_inv_disp[c] = df_inv_disp[c].apply(fmt_num)
+            df_inv_disp[c] = df_inv_disp[c].apply(fmt_num).astype(str)
         
         st.dataframe(df_inv_disp, use_container_width=True, hide_index=True)
         
@@ -374,13 +374,13 @@ try:
         }
         df_master_disp = res_master[disp_master_cols].rename(columns=master_rename)
         
-        df_master_disp["Phần trăm VAT"] = (pd.to_numeric(df_master_disp["Phần trăm VAT"], errors='coerce').fillna(0) * 100).apply(fmt_pct_vat)
-        df_master_disp["Tỉ lệ Front"] = (pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100).apply(fmt_pct_front)
+        df_master_disp["Phần trăm VAT"] = (pd.to_numeric(df_master_disp["Phần trăm VAT"], errors='coerce').fillna(0) * 100).apply(fmt_pct_vat).astype(str)
+        df_master_disp["Tỉ lệ Front"] = (pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100).apply(fmt_pct_front).astype(str)
         
-        df_master_disp["Giá bán DVN"] = df_master_disp["Giá bán DVN"].apply(fmt_num)
-        df_master_disp["Giá bán DVL"] = df_master_disp["Giá bán DVL"].apply(fmt_num)
-        df_master_disp["Giá BQGQ"] = df_master_disp["Giá BQGQ"].apply(fmt_num)
-        df_master_disp["Tổng siêu thị"] = df_master_disp["Tổng siêu thị"].apply(fmt_num)
+        df_master_disp["Giá bán DVN"] = df_master_disp["Giá bán DVN"].apply(fmt_num).astype(str)
+        df_master_disp["Giá bán DVL"] = df_master_disp["Giá bán DVL"].apply(fmt_num).astype(str)
+        df_master_disp["Giá BQGQ"] = df_master_disp["Giá BQGQ"].apply(fmt_num).astype(str)
+        df_master_disp["Tổng siêu thị"] = df_master_disp["Tổng siêu thị"].apply(fmt_num).astype(str)
         
         st.dataframe(df_master_disp, use_container_width=True, hide_index=True)
     
