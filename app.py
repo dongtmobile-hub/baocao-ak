@@ -46,8 +46,8 @@ try:
     </div>
     """, unsafe_allow_html=True)
     
-    # Cache data
-    @st.cache_data(ttl=300)
+    # Cache data bằng resource để tránh clone memory
+    @st.cache_resource(ttl=300)
     def load_data(f_master='master.parquet', f_monthly='monthly.parquet', f_inv='inventory.parquet'):
         df_master = pd.read_parquet(f_master)
         df_monthly = pd.read_parquet(f_monthly)
