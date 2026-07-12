@@ -349,12 +349,14 @@ try:
         }
         df_inv_disp = res_inv[disp_inv_cols].rename(columns=inv_rename)
         
-        # Định dạng phân tách số thập phân trực tiếp vào DataFrame để tiết kiệm RAM (tránh dùng Styler cho data lớn)
+        # Dùng Streamlit column_config để format số ở frontend, tiết kiệm 90% RAM cho server
         inv_format_cols = ['Sức bán', 'Tổng tồn kho', 'Tồn kho mới', 'Tồn kho cận', 'Tồn siêu thị mới', 'Tồn siêu thị cận', 'Tổng giá trị', 'Giá trị kho mới', 'Giá trị kho cận', 'Giá trị ST mới', 'Giá trị ST cận']
-        for c in inv_format_cols:
-            df_inv_disp[c] = df_inv_disp[c].apply(fmt_num).astype(str)
         
-        st.dataframe(df_inv_disp, use_container_width=True, hide_index=True)
+        # Tạo cấu hình cột để thêm dấu phẩy phân cách hàng nghìn
+        col_cfg = {c: st.column_config.NumberColumn(format="%,.0f") for c in inv_format_cols}
+        
+        # Hiển thị dataframe với cấu hình cột
+        st.dataframe(df_inv_disp, use_container_width=True, hide_index=True, column_config=col_cfg)
         
         st.subheader("Chi tiết Thông tin Sản phẩm (Master)")
         res_master = df_master.copy()
@@ -374,15 +376,24 @@ try:
         }
         df_master_disp = res_master[disp_master_cols].rename(columns=master_rename)
         
-        df_master_disp["Phần trăm VAT"] = (pd.to_numeric(df_master_disp["Phần trăm VAT"], errors='coerce').fillna(0) * 100).apply(fmt_pct_vat).astype(str)
-        df_master_disp["Tỉ lệ Front"] = (pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0) * 100).apply(fmt_pct_front).astype(str)
+        # Tối ưu RAM: Không ép kiểu str trong dataframe, để Streamlit xử lý hiển thị
+        df_master_disp["Phần trăm VAT"] = pd.to_numeric(df_master_disp["Phần trăm VAT"], errors='coerce').fillna(0)
+        df_master_disp["Tỉ lệ Front"] = pd.to_numeric(df_master_disp["Tỉ lệ Front"], errors='coerce').fillna(0)
         
-        df_master_disp["Giá bán DVN"] = df_master_disp["Giá bán DVN"].apply(fmt_num).astype(str)
-        df_master_disp["Giá bán DVL"] = df_master_disp["Giá bán DVL"].apply(fmt_num).astype(str)
-        df_master_disp["Giá BQGQ"] = df_master_disp["Giá BQGQ"].apply(fmt_num).astype(str)
-        df_master_disp["Tổng siêu thị"] = df_master_disp["Tổng siêu thị"].apply(fmt_num).astype(str)
+        # Đảm bảo các cột giá là số
+        for c in ["Giá bán DVN", "Giá bán DVL", "Giá BQGQ", "Tổng siêu thị"]:
+            df_master_disp[c] = pd.to_numeric(df_master_disp[c], errors='coerce').fillna(0)
+            
+        master_cfg = {
+            "Phần trăm VAT": st.column_config.NumberColumn(format="%.2f %%"),
+            "Tỉ lệ Front": st.column_config.NumberColumn(format="%.2f %%"),
+            "Giá bán DVN": st.column_config.NumberColumn(format="%,.0f"),
+            "Giá bán DVL": st.column_config.NumberColumn(format="%,.0f"),
+            "Giá BQGQ": st.column_config.NumberColumn(format="%,.0f"),
+            "Tổng siêu thị": st.column_config.NumberColumn(format="%,.0f")
+        }
         
-        st.dataframe(df_master_disp, use_container_width=True, hide_index=True)
+        st.dataframe(df_master_disp, use_container_width=True, hide_index=True, column_config=master_cfg)
     
     st.markdown("---")
     st.markdown("<p style='text-align: center; color: gray;'>Hệ thống Báo cáo Nội bộ - Phát triển bằng Python Streamlit</p>", unsafe_allow_html=True)
