@@ -316,8 +316,7 @@ if "Tất cả" in user_roles:
     menu_options.append("⚙️ Quản trị Phân quyền")
 
 st.markdown("<br>", unsafe_allow_html=True)
-st.sidebar.markdown("---")
-selected_tab = st.sidebar.radio("📌 ĐIỀU HƯỚNG BÁO CÁO", menu_options)
+tabs = st.tabs(menu_options)
 st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
 
 # ==========================================
@@ -514,7 +513,7 @@ if False: # Da an theo yeu cau cua user
 # ==========================================
 # TAB 2: TRA CỨU SẢN PHẨM (BIGQUERY / PARQUET)
 # ==========================================
-if selected_tab == menu_options[1]:
+with tabs[1]:
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("🔍 Tra cứu 360 Độ (Dữ liệu tĩnh)")
     
@@ -802,7 +801,7 @@ if selected_tab == menu_options[1]:
 # ==========================================
 # TAB 3: NHẬP VÀ TỒN KHO 
 # ==========================================
-if selected_tab == menu_options[2]:
+with tabs[2]:
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📦 Quản lý Dữ liệu Phiếu Nhập & Phân tích IN/OUT")
     
@@ -954,7 +953,7 @@ if selected_tab == menu_options[2]:
                 st.warning("Không tìm thấy dữ liệu khớp với bộ lọc!")
 # TAB APPS SCRIPT
 # ==========================================
-if selected_tab == menu_options[0]:
+with tabs[0]:
     st.markdown("<br>", unsafe_allow_html=True)
     app_script_url = "https://script.google.com/macros/s/AKfycbx2Xs6-OO5OUmcfdD5yfhq2mZdmzMV089rITuCsNpdmy1ZrlKXF1WCTgopIk2u1IXCq/exec"
     st.components.v1.iframe(app_script_url, height=900, scrolling=True)
@@ -962,8 +961,8 @@ if selected_tab == menu_options[0]:
 # ==========================================
 # TAB 4: QUẢN TRỊ PHÂN QUYỀN (ADMIN ONLY)
 # ==========================================
-if "Tất cả" in user_roles and "⚙️ Quản trị Phân quyền" in menu_options:
-    if selected_tab == "⚙️ Quản trị Phân quyền":
+if "Tất cả" in user_roles and len(tabs) > 3:
+    with tabs[3]:
         st.subheader("⚙️ Bảng Phân Quyền Nhân Sự")
         st.info("Chỉnh sửa trực tiếp trên bảng và bấm Lưu để cập nhật lên BigQuery. Nhập 'Tất cả' ở cột nganh_hang để cấp full quyền.")
     
